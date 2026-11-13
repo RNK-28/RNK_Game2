@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RNK Digital Bank | Google Sheets Synced</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'scale-in': 'scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-12px)' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: 0, transform: 'translateY(25px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        scaleIn: {
+                            '0%': { opacity: 0, transform: 'scale(0.92)' },
+                            '100%': { opacity: 1, transform: 'scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden; }
+        .glass-card {
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        }
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+        }
+        .card-gradient-gold { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #b45309 100%); }
+        .card-gradient-user { background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #06b6d4 100%); }
+        .btn-press:active { transform: scale(0.96); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 min-h-screen relative selection:bg-indigo-500 selection:text-white">
+
+    <!-- Ambient Background Orbs -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 dark:bg-indigo-600/25 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute top-1/2 -right-32 w-96 h-96 bg-cyan-500/20 dark:bg-cyan-500/20 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="relative z-20 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0b1120]/75 backdrop-blur-xl sticky top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-building-columns text-lg sm:text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-extrabold text-lg sm:text-2xl tracking-tight bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                        RNK Digital Bank
+                    </h1>
+                    <p class="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 tracking-wider uppercase">Google Sheets Sync Edition</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Sync Status Badge -->
+                <div id="sync-status-badge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span id="sync-text">Sheets Connected</span>
+                </div>
+
+                <!-- Google Sheet Settings Button -->
+                <button onclick="openSheetConfigModal()" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 hover:text-white border border-indigo-500/30 font-semibold text-xs sm:text-sm transition-all btn-press" title="Configure Google Sheets URL">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span class="hidden md:inline">Sheet URL</span>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button onclick="toggleSound()" id="sound-btn" class="p-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 hover:bg-indigo-500 hover:text-white transition-all btn-press">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-sm"></i>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 hover:bg-amber-500 hover:text-white transition-all btn-press">
+                    <i id="theme-icon" class="fa-solid fa-sun text-sm text-amber-400"></i>
+                </button>
+
+                <!-- Full Reset -->
+                <button onclick="openResetModal()" class="px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 font-semibold text-xs sm:text-sm transition-all btn-press">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="flex flex-col items-center justify-center min-h-[65vh] text-center">
+            <div class="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+            <h2 class="text-xl font-bold font-display">Syncing with Google Sheets Vault...</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Loading accounts & ledger records</p>
+        </div>
+
+        <!-- VIEW 1: LOGIN SCREEN -->
+        <section id="login-view" class="hidden max-w-md mx-auto mt-4 sm:mt-10 animate-slide-up">
+            <div class="glass-card rounded-3xl p-6 sm:p-9 relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-cyan-400 to-amber-500"></div>
+
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-600/15 border border-indigo-500/30 flex items-center justify-center text-indigo-500 mb-4 shadow-inner">
+                        <i class="fa-solid fa-shield-halved text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-display font-extrabold">Secure Vault Login</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">Enter your RNK Account ID & Password</p>
+                </div>
+
+                <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Account ID</label>
+                        <input type="text" id="login-id" required placeholder="Enter Account ID (e.g., Govt_88_87)" autocomplete="off"
+                            class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-indigo-500 outline-none font-medium text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Password</label>
+                        <input type="password" id="login-pass" required placeholder="Enter Password"
+                            class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-indigo-500 outline-none font-medium text-sm">
+                    </div>
+
+                    <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 text-white font-bold text-base shadow-lg shadow-indigo-600/30 transition-all btn-press">
+                        <span>Login to Vault</span> <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- VIEW 2: USER DASHBOARD -->
+        <section id="user-dashboard" class="hidden space-y-6 sm:space-y-8 animate-slide-up">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card rounded-3xl p-5 sm:p-6">
+                <div class="flex items-center gap-4">
+                    <div id="user-avatar" class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white font-display font-extrabold text-2xl shadow-lg">N</div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-500 border border-indigo-500/20">VERIFIED CITIZEN</span>
+                            <span id="user-id-badge" class="text-xs font-mono text-slate-400"></span>
+                        </div>
+                        <h2 id="user-display-name" class="text-2xl sm:text-3xl font-display font-extrabold mt-0.5"></h2>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 self-end sm:self-center">
+                    <button onclick="showPinReveal()" class="px-4 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-semibold text-sm transition-all btn-press">
+                        <i class="fa-solid fa-key mr-1.5"></i> <span id="pin-btn-text">Show PIN</span>
+                    </button>
+                    <button onclick="handleLogout()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-white font-semibold text-sm transition-all btn-press">
+                        <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Balance & Transfer Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="card-gradient-user rounded-3xl p-6 sm:p-7 text-white shadow-2xl relative overflow-hidden">
+                        <p class="text-xs uppercase tracking-widest text-blue-200 font-semibold">Google Sheets Synced Balance</p>
+                        <h3 id="user-balance" class="text-3xl sm:text-4xl font-display font-extrabold mt-1 tracking-tight">RS = 0</h3>
+                        <div class="mt-8 pt-4 border-t border-white/15 flex justify-between items-end">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-widest text-blue-200">Account Holder</p>
+                                <p id="card-holder-name" class="font-semibold text-base mt-0.5"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] uppercase tracking-widest text-blue-200">Security PIN</p>
+                                <p id="card-pin-badge" class="font-mono font-bold text-sm bg-white/15 px-2.5 py-0.5 rounded-lg mt-0.5">****</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Government Pay -->
+                    <div class="glass-card rounded-3xl p-6">
+                        <h3 class="font-display font-bold text-lg mb-3 flex items-center gap-2"><i class="fa-solid fa-landmark text-amber-500"></i> Pay to Government</h3>
+                        <form onsubmit="handlePayGovtDirect(event)" class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="number" id="govt-direct-amount" min="1" required placeholder="Amount RS" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm font-semibold">
+                                <input type="password" id="govt-direct-pin" maxlength="4" required placeholder="4-Digit PIN" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm font-mono font-bold">
+                            </div>
+                            <input type="text" id="govt-direct-note" placeholder="Purpose (Zakat, Tax, Fee)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm">
+                            <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm shadow-lg btn-press">Send to Government Sheet</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Money Transfer Box -->
+                <div class="lg:col-span-7 glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-display font-bold text-xl mb-1 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer text-indigo-500"></i> Instant Money Transfer</h3>
+                        <p class="text-xs text-slate-400 mb-4">Transfers update instantly across Google Sheets</p>
+
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Search Recipient</label>
+                            <input type="text" id="recipient-search" oninput="filterRecipients()" placeholder="Type citizen name or ID..." class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm">
+                            <div id="recipient-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 max-h-36 overflow-y-auto"></div>
+                        </div>
+
+                        <div id="selected-recipient-box" class="hidden mb-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex justify-between items-center">
+                            <span id="selected-recipient-name" class="font-bold text-sm"></span>
+                            <button type="button" onclick="clearSelectedRecipient()" class="text-xs text-rose-500 font-bold">Change</button>
+                        </div>
+
+                        <form id="transfer-form" onsubmit="handleMoneyTransfer(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <input type="number" id="transfer-amount" min="1" required placeholder="Transfer Amount RS" class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none font-bold">
+                                <input type="password" id="transfer-pin" maxlength="4" required placeholder="Your 4-Digit PIN" class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none font-mono font-bold tracking-widest text-center">
+                            </div>
+                            <button type="submit" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg btn-press">Transfer via Google Sheets</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bills & Transactions -->
+            <div class="glass-card rounded-3xl p-6">
+                <h3 class="font-display font-bold text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-rose-500"></i> Government Bills & Taxes</h3>
+                <div id="user-bills-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div class="glass-card rounded-3xl p-6">
+                <h3 class="font-display font-bold text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Sheet Ledger History</h3>
+                <div id="user-history-list" class="space-y-3 max-h-60 overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: GOVERNMENT COMMAND CENTER -->
+        <section id="govt-dashboard" class="hidden space-y-6 sm:space-y-8 animate-slide-up">
+            <div class="card-gradient-gold rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-200 text-xs font-bold uppercase">Sovereign Google Sheets Authority</span>
+                        <h2 class="text-3xl font-display font-extrabold mt-1">Government Central Reserve</h2>
+                        <p class="text-indigo-200 text-sm">All data is synced live with Google Sheets database.</p>
+                    </div>
+                    <button onclick="handleLogout()" class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-lg btn-press">Exit Portal</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-card rounded-2xl p-5 border-l-4 border-emerald-500">
+                    <p class="text-xs uppercase text-slate-400 font-bold">Total Sheet Revenue</p>
+                    <h4 id="govt-total-collected" class="text-3xl font-display font-extrabold text-emerald-500 mt-1">RS = 0</h4>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border-l-4 border-cyan-500">
+                    <p class="text-xs uppercase text-slate-400 font-bold">Total Citizens</p>
+                    <h4 id="govt-total-citizens" class="text-3xl font-display font-extrabold text-cyan-500 mt-1">0</h4>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border-l-4 border-indigo-500">
+                    <p class="text-xs uppercase text-slate-400 font-bold">Total Transactions</p>
+                    <h4 id="govt-total-tx" class="text-3xl font-display font-extrabold text-indigo-500 mt-1">0</h4>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Mint Money -->
+                <div class="glass-card rounded-3xl p-6">
+                    <h3 class="font-display font-bold text-lg mb-3"><i class="fa-solid fa-coins text-emerald-500"></i> Disburse Funds to Citizen</h3>
+                    <form onsubmit="handleGovtGrantMoney(event)" class="space-y-3">
+                        <select id="govt-grant-user" required class="w-full px-3.5 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm font-semibold"></select>
+                        <input type="number" id="govt-grant-amount" min="1" required placeholder="Amount RS" class="w-full px-3.5 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm font-bold">
+                        <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg btn-press">Mint & Save to Sheet</button>
+                    </form>
+                </div>
+
+                <!-- Create Citizen -->
+                <div class="glass-card rounded-3xl p-6">
+                    <h3 class="font-display font-bold text-lg mb-3"><i class="fa-solid fa-user-plus text-indigo-500"></i> Register New Citizen Account</h3>
+                    <form onsubmit="handleCreateCitizen(event)" class="space-y-3">
+                        <input type="text" id="new-user-name" required placeholder="Full Name" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="new-user-id" required placeholder="Account ID" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-xs font-mono">
+                            <input type="text" id="new-user-pass" required placeholder="Password" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-xs font-mono">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="new-user-bal" value="2000" required placeholder="Initial RS" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-xs font-bold">
+                            <input type="text" id="new-user-pin" maxlength="4" required placeholder="4-Digit PIN" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-700 outline-none text-xs font-mono font-bold">
+                        </div>
+                        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg btn-press">Create Account in Sheet</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Citizens Table -->
+            <div class="glass-card rounded-3xl p-6">
+                <h3 class="font-display font-bold text-xl mb-4">All Citizens Managed via Google Sheets</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs uppercase text-slate-400">
+                                <th class="py-3 px-4">Name</th>
+                                <th class="py-3 px-4">ID</th>
+                                <th class="py-3 px-4">PIN</th>
+                                <th class="py-3 px-4">Balance</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="govt-users-table" class="divide-y divide-slate-800 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: GOOGLE SHEETS URL CONFIGURATION -->
+    <div id="sheet-config-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-lg w-full p-6 sm:p-8 animate-scale-in border border-indigo-500/40">
+            <h3 class="text-2xl font-display font-extrabold mb-2">Google Sheets Web App URL</h3>
+            <p class="text-sm text-slate-400 mb-4">Apna Google Apps Script ka Web App URL yahan paste karein taake data seedha aapke Google Sheet mein save aur load ho.</p>
+            <form onsubmit="saveSheetUrl(event)" class="space-y-4">
+                <input type="url" id="sheet-url-input" required placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-sm font-mono text-indigo-300 outline-none">
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeSheetConfigModal()" class="flex-1 py-3 rounded-xl bg-slate-800 font-bold text-sm">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg">Save & Sync</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: FULL RESET -->
+    <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-md w-full p-6 sm:p-8 border-2 border-rose-500/40">
+            <h3 class="text-2xl font-display font-extrabold text-center mb-2">Full System Reset</h3>
+            <p class="text-sm text-slate-400 text-center mb-4">Master Password enter karein taake sheet reset hojaye.</p>
+            <form onsubmit="handleFullReset(event)" class="space-y-4">
+                <input type="password" id="reset-pass-input" required placeholder="Master Password (2rnk8)" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 outline-none font-mono">
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeResetModal()" class="flex-1 py-3 rounded-xl bg-slate-800 font-bold text-sm">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold text-sm">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT & GOOGLE SHEETS API CONNECTOR -->
+    <script>
+        let SCRIPT_URL = localStorage.getItem('rnk_sheets_url') || "";
+
+        let state = {
+            users: [
+                { id: "Govt_88_87", name: "Government Treasury", password: "2rnk8", balance: 99999999999, pin: "2026", role: "govt", banned: false }
+            ],
+            bills: [],
+            transactions: [],
+            currentSessionId: null,
+            selectedRecipientId: null,
+            pinRevealed: false
+        };
+
+        let soundEnabled = true;
+        let synth = null;
+
+        function initAudio() {
+            if (!synth && typeof Tone !== 'undefined') {
+                synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                synth.volume.value = -8;
+            }
+        }
+        window.playClick = () => { if(soundEnabled) { initAudio(); try { Tone.start(); synth.triggerAttackRelease("C6", "32n"); } catch(e){} } };
+        window.playSuccess = () => { if(soundEnabled) { initAudio(); try { Tone.start(); const now = Tone.now(); synth.triggerAttackRelease("C5", "16n", now); synth.triggerAttackRelease("G5", "16n", now + 0.1); } catch(e){} } };
+        window.playError = () => { if(soundEnabled) { initAudio(); try { Tone.start(); synth.triggerAttackRelease("F3", "16n"); } catch(e){} } };
+
+        window.toggleSound = () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').className = soundEnabled ? "fa-solid fa-volume-high text-sm" : "fa-solid fa-volume-xmark text-sm text-rose-500";
+            showToast(soundEnabled ? "Sound enabled" : "Muted", "info");
+        };
+
+        window.toggleTheme = () => {
+            playClick();
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if(html.classList.contains('dark')) {
+                html.classList.remove('dark'); html.classList.add('light');
+                icon.className = "fa-solid fa-moon text-sm text-indigo-600";
+            } else {
+                html.classList.remove('light'); html.classList.add('dark');
+                icon.className = "fa-solid fa-sun text-sm text-amber-400";
+            }
+        };
+
+        window.showToast = (msg, type="success") => {
+            const container = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            const colors = { success: "bg-emerald-600", error: "bg-rose-600", info: "bg-indigo-600", warning: "bg-amber-500 text-slate-950" };
+            t.className = `pointer-events-auto flex items-center gap-3 px-4 py-3.5 rounded-2xl shadow-2xl text-white font-semibold text-sm ${colors[type]} animate-slide-up`;
+            t.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${msg}</span>`;
+            container.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        };
+
+        // --- GOOGLE SHEETS API BRIDGE ---
+        async function fetchFromSheets() {
+            if (!SCRIPT_URL) {
+                document.getElementById('loading-screen').classList.add('hidden');
+                openSheetConfigModal();
+                return;
+            }
+            try {
+                const res = await fetch(SCRIPT_URL + "?action=getData");
+                const data = await res.json();
+                if(data && data.users) {
+                    state.users = data.users;
+                    state.bills = data.bills || [];
+                    state.transactions = data.transactions || [];
+                }
+            } catch(err) {
+                console.error("Sheets fetch error:", err);
+                showToast("Failed to load from Google Sheet. Check URL.", "error");
+            }
+            document.getElementById('loading-screen').classList.add('hidden');
+            renderApp();
+        }
+
+        async function syncToSheets(action, payload) {
+            if(!SCRIPT_URL) return;
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, ...payload })
+                });
+            } catch(err) {
+                console.error("Sync error:", err);
+            }
+        }
+
+        window.openSheetConfigModal = () => {
+            document.getElementById('sheet-url-input').value = SCRIPT_URL;
+            document.getElementById('sheet-config-modal').classList.remove('hidden');
+        };
+        window.closeSheetConfigModal = () => document.getElementById('sheet-config-modal').classList.add('hidden');
+        window.saveSheetUrl = (e) => {
+            e.preventDefault();
+            SCRIPT_URL = document.getElementById('sheet-url-input').value.trim();
+            localStorage.setItem('rnk_sheets_url', SCRIPT_URL);
+            closeSheetConfigModal();
+            showToast("Google Sheet URL Saved! Syncing...", "success");
+            fetchFromSheets();
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if(SCRIPT_URL) {
+                fetchFromSheets();
+            } else {
+                document.getElementById('loading-screen').classList.add('hidden');
+                openSheetConfigModal();
+            }
+        });
+
+        // --- LOGIN & AUTH ---
+        window.handleLogin = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('login-id').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const user = state.users.find(u => u.id === id && u.password === pass);
+            if(!user) { playError(); showToast("Invalid Account ID or Password!", "error"); return; }
+            if(user.banned) { playError(); showToast("Account is Banned by Government!", "error"); return; }
+            
+            playSuccess();
+            state.currentSessionId = user.id;
+            document.getElementById('login-form').reset();
+            showToast(`Welcome back, ${user.name}!`, "success");
+            renderApp();
+        };
+
+        window.handleLogout = () => {
+            playClick();
+            state.currentSessionId = null;
+            showToast("Logged out securely.", "info");
+            renderApp();
+        };
+
+        window.showPinReveal = () => {
+            playClick();
+            state.pinRevealed = !state.pinRevealed;
+            renderApp();
+        };
+
+        // --- MONEY TRANSFER ---
+        window.filterRecipients = () => {
+            const q = document.getElementById('recipient-search').value.toLowerCase();
+            const list = document.getElementById('recipient-list');
+            const users = state.users.filter(u => u.id !== state.currentSessionId && u.role !== 'govt');
+            const filtered = q ? users.filter(u => u.name.toLowerCase().includes(q) || u.id.toLowerCase().includes(q)) : users;
+            
+            list.innerHTML = filtered.map(u => `
+                <button type="button" onclick="selectRecipient('${u.id}')" class="p-2.5 rounded-xl border text-left bg-slate-900 border-slate-800 hover:border-indigo-500">
+                    <p class="font-bold text-xs">${u.name}</p>
+                    <p class="text-[10px] text-slate-400 font-mono">ID: ${u.id}</p>
+                </button>
+            `).join('');
+        };
+
+        window.selectRecipient = (id) => {
+            playClick();
+            state.selectedRecipientId = id;
+            const u = state.users.find(x => x.id === id);
+            document.getElementById('selected-recipient-box').classList.remove('hidden');
+            document.getElementById('selected-recipient-name').textContent = `Sending to: ${u.name} (${u.id})`;
+        };
+        window.clearSelectedRecipient = () => {
+            state.selectedRecipientId = null;
+            document.getElementById('selected-recipient-box').classList.add('hidden');
+        };
+
+        window.handleMoneyTransfer = async (e) => {
+            e.preventDefault();
+            const sender = state.users.find(u => u.id === state.currentSessionId);
+            const recipient = state.users.find(u => u.id === state.selectedRecipientId);
+            const amount = Number(document.getElementById('transfer-amount').value);
+            const pin = document.getElementById('transfer-pin').value.trim();
+
+            if(!recipient) { showToast("Select recipient!", "warning"); return; }
+            if(sender.balance < amount) { showToast("Insufficient balance!", "error"); return; }
+            if(pin !== sender.pin) { showToast("Incorrect 4-digit PIN!", "error"); return; }
+
+            sender.balance -= amount;
+            recipient.balance += amount;
+
+            const txObj = { id: 'TX-'+Date.now(), fromId: sender.id, fromName: sender.name, toId: recipient.id, toName: recipient.name, amount, category: 'Transfer', timestamp: Date.now() };
+            state.transactions.unshift(txObj);
+
+            await syncToSheets('updateUserBalance', { id: sender.id, balance: sender.balance });
+            await syncToSheets('updateUserBalance', { id: recipient.id, balance: recipient.balance });
+            await syncToSheets('addTransaction', txObj);
+
+            playSuccess();
+            document.getElementById('transfer-form').reset();
+            clearSelectedRecipient();
+            showToast(`RS ${amount.toLocaleString()} transferred!`, "success");
+            renderApp();
+        };
+
+        // --- GOV GUEST & COMMANDS ---
+        window.handleGovtGrantMoney = async (e) => {
+            e.preventDefault();
+            const targetId = document.getElementById('govt-grant-user').value;
+            const amount = Number(document.getElementById('govt-grant-amount').value);
+            const target = state.users.find(u => u.id === targetId);
+
+            target.balance += amount;
+            const txObj = { id: 'GRANT-'+Date.now(), fromId: 'Govt_88_87', fromName: 'Govt Treasury', toId: target.id, toName: target.name, amount, category: 'Grant', timestamp: Date.now() };
+            state.transactions.unshift(txObj);
+
+            await syncToSheets('updateUserBalance', { id: target.id, balance: target.balance });
+            await syncToSheets('addTransaction', txObj);
+
+            playSuccess();
+            document.getElementById('govt-grant-amount').value = '';
+            showToast(`Granted RS ${amount} to ${target.name}!`, "success");
+            renderApp();
+        };
+
+        window.handleCreateCitizen = async (e) => {
+            e.preventDefault();
+            const newUser = {
+                id: document.getElementById('new-user-id').value.trim(),
+                name: document.getElementById('new-user-name').value.trim(),
+                password: document.getElementById('new-user-pass').value,
+                balance: Number(document.getElementById('new-user-bal').value),
+                pin: document.getElementById('new-user-pin').value.trim(),
+                role: 'user',
+                banned: false
+            };
+
+            state.users.push(newUser);
+            await syncToSheets('addUser', newUser);
+            playSuccess();
+            e.target.reset();
+            showToast(`Citizen ${newUser.name} created!`, "success");
+            renderApp();
+        };
+
+        window.openResetModal = () => document.getElementById('reset-modal').classList.remove('hidden');
+        window.closeResetModal = () => document.getElementById('reset-modal').classList.add('hidden');
+        window.handleFullReset = (e) => {
+            e.preventDefault();
+            if(document.getElementById('reset-pass-input').value === '2rnk8') {
+                localStorage.clear();
+                location.reload();
+            } else {
+                showToast("Incorrect master password!", "error");
+            }
+        };
+
+        // --- RENDER ---
+        function renderApp() {
+            const user = state.users.find(u => u.id === state.currentSessionId);
+            const loginView = document.getElementById('login-view');
+            const userDash = document.getElementById('user-dashboard');
+            const govtDash = document.getElementById('govt-dashboard');
+
+            if(!user) {
+                loginView.classList.remove('hidden'); userDash.classList.add('hidden'); govtDash.classList.add('hidden');
+                return;
+            }
+            loginView.classList.add('hidden');
+            if(user.role === 'govt') {
+                userDash.classList.add('hidden'); govtDash.classList.remove('hidden');
+                renderGovt();
+            } else {
+                govtDash.classList.add('hidden'); userDash.classList.remove('hidden');
+                renderUser(user);
+            }
+        }
+
+        function renderUser(user) {
+            document.getElementById('user-avatar').textContent = user.name.charAt(0);
+            document.getElementById('user-id-badge').textContent = `ID: ${user.id}`;
+            document.getElementById('user-display-name').textContent = user.name;
+            document.getElementById('card-holder-name').textContent = user.name;
+            document.getElementById('user-balance').textContent = `RS = ${user.balance.toLocaleString()}`;
+            document.getElementById('card-pin-badge').textContent = state.pinRevealed ? user.pin : '****';
+            document.getElementById('pin-btn-text').textContent = state.pinRevealed ? 'Hide PIN' : 'Show PIN';
+
+            filterRecipients();
+
+            // History
+            const history = state.transactions.filter(t => t.fromId === user.id || t.toId === user.id);
+            document.getElementById('user-history-list').innerHTML = history.length ? history.map(t => {
+                const incoming = t.toId === user.id;
+                return `<div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center text-xs">
+                    <div><p class="font-bold">${incoming ? 'From: '+t.fromName : 'To: '+t.toName}</p><p class="text-slate-400">${t.category}</p></div>
+                    <span class="font-bold ${incoming ? 'text-emerald-500':'text-rose-500'}">${incoming?'+':'-'} RS ${t.amount}</span>
+                </div>`;
+            }).join('') : `<p class="text-xs text-slate-400 text-center py-4">No transactions.</p>`;
+        }
+
+        function renderGovt() {
+            const citizens = state.users.filter(u => u.role !== 'govt');
+            document.getElementById('govt-grant-user').innerHTML = citizens.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            document.getElementById('govt-total-citizens').textContent = citizens.length;
+            document.getElementById('govt-total-tx').textContent = state.transactions.length;
+
+            let totalRev = 0;
+            state.transactions.forEach(t => { if(t.toId === 'Govt_88_87') totalRev += t.amount; });
+            document.getElementById('govt-total-collected').textContent = `RS = ${totalRev.toLocaleString()}`;
+
+            document.getElementById('govt-users-table').innerHTML = citizens.map(c => `
+                <tr class="border-b border-slate-800">
+                    <td class="py-3 px-4 font-bold">${c.name}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-slate-400">${c.id}</td>
+                    <td class="py-3 px-4 font-mono font-bold text-indigo-400">${c.pin}</td>
+                    <td class="py-3 px-4 font-bold text-emerald-500">RS = ${c.balance.toLocaleString()}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="toggleBan('${c.id}')" class="px-3 py-1 rounded-lg text-xs font-bold ${c.banned?'bg-emerald-600':'bg-rose-600/20 text-rose-500'}">${c.banned?'Unban':'Ban'}</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
